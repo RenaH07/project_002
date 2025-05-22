@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>かわいさ予備調査</title>
+
+  <!-- jsPsych関係の読み込み -->
+  <script src="jspsych.js"></script>
+  <link href="jspsych.css" rel="stylesheet">
+  <script src="plugins/jspsych-html-button-response.js"></script>
+  <script src="plugins/jspsych-survey-likert.js"></script>
+  <script src="plugins/jspsych-survey-html-form.js"></script>
+
+  <!-- ✅ Netlifyがフォームの存在を認識するためだけに必要な記述 -->
+  <form name="experiment-data" netlify hidden>
+    <input type="hidden" name="data">
+  </form>
+</head>
+<body>
+  <!-- 実験の本体スクリプト -->
+  <script src="my_experiment.js"></script>
+</body>
+</html>
