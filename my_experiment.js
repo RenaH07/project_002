@@ -98,7 +98,6 @@ timeline.push({
 timeline.push({
   type: 'html-button-response',
   stimulus: '<iframe src="stimuli/perfect_straight_speed2.5.html" width="820" height="620" frameborder="0"></iframe>',
-  data: { stimulus_filename: 'stimuli/perfect_straight_speed2.5.html' },  // ←これを追加！
   choices: ['次へ'],
   prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
 });
@@ -183,6 +182,7 @@ const shuffleQuestions = jsPsych.randomization.shuffle([
     type: 'survey-likert',
     preamble: "<h3>今見たアニメーションについてあなたの印象を教えてください。</h3>",
     questions: allQuestions,
+    data: { stimulus_filename: file }, // ← ここを追加！！！！
     on_load: () => {
       document.querySelectorAll('.jspsych-survey-likert-horizontal .jspsych-survey-likert-label').forEach(label => {
         label.style.whiteSpace = 'nowrap';
