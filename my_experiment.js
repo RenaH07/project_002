@@ -279,15 +279,17 @@ jsPsych.init({
     const backgroundData = jsPsych.data.get().filter({ trial_type: 'survey-html-form' }).values();
     const background = backgroundData.length > 0 ? backgroundData[0].response : {};
 
-    const responses = stimulusTrials.map((stim, i) => {
-      const fileMatch = stim.stimulus.match(/src="([^"]+)"/);
-      const stimulusFile = fileMatch ? fileMatch[1].split('/').pop() : `unknown_${i}`;
+const validStimulusTrials = stimulusTrials.filter(trial => trial.stimulus.includes("iframe"));
 
-      return {
-        stimulus: stimulusFile,
-        ...likertResponses[i]?.response
-      };
-    });
+const responses = validStimulusTrials.map((stim, i) => {
+  const fileMatch = stim.stimulus.match(/src="([^"]+)"/);
+  const stimulusFile = fileMatch ? fileMatch[1].split('/').pop() : `unknown_${i}`;
+
+  return {
+    stimulus: stimulusFile,
+    ...likertResponses[i]?.response
+  };
+});
 
     const dataToSend = {
       id: participantID,
