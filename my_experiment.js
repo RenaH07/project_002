@@ -268,25 +268,34 @@ jsPsych.init({
   on_finish: function () {
     const participantID = generateParticipantID();
 
+    const stimulusTrials = jsPsych.data.get()
+      .filter(trial => trial.trial_type === 'html-button-response' && trial.stimulus.includes("iframe"))
+      .values();
+
     const likertResponses = jsPsych.data.get()
-      .filter(trial => trial.trial_type === 'survey-likert' && trial.data?.stimulus_filename)
+      .filter(trial => trial.trial_type === 'survey-likert')
       .values();
 
     const backgroundData = jsPsych.data.get().filter({ trial_type: 'survey-html-form' }).values();
     const background = backgroundData.length > 0 ? backgroundData[0].response : {};
 
-    const responses = likertResponses.map((resp) => {
+    const responses = stimulusTrials.map((stim, i) => {
+      const fileMatch = stim.stimulus.match(/src="([^"]+)"/);
+      const stimulusFile = fileMatch ? fileMatch[1].split('/').pop() : `unknown_${i}`;
+
       return {
-        stimulus: resp.data?.stimulus_filename?.split('/').pop() || 'unknown',
-        ...resp.response
+        stimulus: stimulusFile,
+        ...likertResponses[i]?.response
       };
     });
 
     const dataToSend = {
       id: participantID,
       ...background,
-      responses
+      responses: responses
     };
+
+    console.log("送信データ：", dataToSend);
 
     fetch("/", {
       method: "POST",
@@ -297,10 +306,10 @@ jsPsych.init({
       })
     })
     .then(() => {
-      console.log("✅ データ送信完了！");
+      console.log("Netlifyへ送信完了！");
     })
     .catch((error) => {
-      console.error("❌ データ送信失敗:", error);
+      console.error("送信失敗：", error);
     });
-  } // 👈 ここで on_finish 関数を閉じる
-}); // 👈 そして jsPsych.init を閉じる
+  } // ← on_finish の function を閉じる
+});  // ← jsPsych.init を閉じる
