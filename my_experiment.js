@@ -132,12 +132,37 @@ const shuffledStimuli = jsPsych.randomization.shuffle(stimuliFiles);
 
 // ==== 刺激提示 & 評価 ====
 shuffledStimuli.forEach(file => {
-timeline.push({
-  type: 'html-button-response',
-  stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
-  data: { stimulus_filename: file }, // ← これを追加！
-  choices: ['次へ'],
-  prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
+shuffledStimuli.forEach(file => {
+  timeline.push({
+    type: 'html-button-response',
+    stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
+    data: { stimulus_filename: file },  // ✅ これで刺激を記録
+    choices: ['次へ'],
+    prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
+  });
+
+  timeline.push({
+    type: 'survey-likert',
+    preamble: "<h3>今見たアニメーションについてあなたの印象を教えてください。</h3>",
+    questions: allQuestions,
+    data: { stimulus_filename: file },  // ✅ ここを追加して評価にも刺激名を保存！
+    on_load: () => {
+      document.querySelectorAll('.jspsych-survey-likert-horizontal .jspsych-survey-likert-label').forEach(label => {
+        label.style.whiteSpace = 'nowrap';
+        label.style.fontSize = '13px';
+        label.style.maxWidth = '100px';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.display = 'inline-block';
+        label.style.verticalAlign = 'top';
+        label.style.textAlign = 'center';
+      });
+
+      document.querySelectorAll('.jspsych-survey-likert-horizontal td').forEach(cell => {
+        cell.style.width = '100px';
+      });
+    }
+  });
 });
 
 const fixedQuestions = [
@@ -267,37 +292,26 @@ jsPsych.init({
   on_finish: function () {
     const participantID = generateParticipantID();
 
-    // 刺激提示のhtml-button-response（stimulusが含まれるもの）のみ取得
-    const stimulusTrials = jsPsych.data.get()
-      .filter(trial => trial.trial_type === 'html-button-response' && trial.data?.stimulus_filename?.includes('stimuli/'))
+    const likertResponses = jsPsych.data.get()
+      .filter(trial => trial.trial_type === 'survey-likert' && trial.data?.stimulus_filename)
       .values();
 
-    // 評価に関するsurvey-likertのうち、刺激の数と一致する最後のn件のみ取得
-    const likertResponses = jsPsych.data.get()
-      .filter(trial => trial.trial_type === 'survey-likert')
-      .values()
-      .slice(-stimulusTrials.length);  // 練習やAQなどを除外
-
-    // 背景情報
     const backgroundData = jsPsych.data.get().filter({ trial_type: 'survey-html-form' }).values();
     const background = backgroundData.length > 0 ? backgroundData[0].response : {};
 
-    // 各刺激への評価をマージ
-    const responses = stimulusTrials.map((stim, idx) => {
+    const responses = likertResponses.map((resp) => {
       return {
-        stimulus: stim.data?.stimulus_filename?.split('/').pop() || `unknown_${idx}`,
-        ...likertResponses[idx]?.response
+        stimulus: resp.data?.stimulus_filename?.split('/').pop() || 'unknown',
+        ...resp.response
       };
     });
 
-    // 送信形式に整形
     const dataToSend = {
       id: participantID,
       ...background,
       responses
     };
 
-    // Netlifyに送信
     fetch("/", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -312,5 +326,5 @@ jsPsych.init({
     .catch((error) => {
       console.error("❌ データ送信失敗:", error);
     });
-  }
-});
+  } // 👈 ここで on_finish 関数を閉じる
+}); // 👈 そして jsPsych.init を閉じる
