@@ -267,37 +267,37 @@ jsPsych.init({
   on_finish: function () {
     const participantID = generateParticipantID();
 
-    // 全survey-likertの回答（印象評価＋AQ）
-    const likertAll = jsPsych.data.get().filter({ trial_type: 'survey-likert' }).values();
+    // 刺激提示のhtml-button-response（stimulusが含まれるもの）のみ取得
+    const stimulusTrials = jsPsych.data.get()
+      .filter(trial => trial.trial_type === 'html-button-response' && trial.data?.stimulus?.includes('stimuli/'))
+      .values();
 
-    // 刺激の提示ブロック（アニメーション）
-    const stimulusTrials = jsPsych.data.get().filter({ trial_type: 'html-button-response' }).values();
+    // 評価に関するsurvey-likertのうち、刺激の数と一致する最後のn件のみ取得
+    const likertResponses = jsPsych.data.get()
+      .filter(trial => trial.trial_type === 'survey-likert')
+      .values()
+      .slice(-stimulusTrials.length);  // 練習やAQなどを除外
 
-    // 背景質問（年齢・性別など）を取得
+    // 背景情報
     const backgroundData = jsPsych.data.get().filter({ trial_type: 'survey-html-form' }).values();
     const background = backgroundData.length > 0 ? backgroundData[0].response : {};
 
-    const responses = [];
+    // 各刺激への評価をマージ
+    const responses = stimulusTrials.map((stim, idx) => {
+      return {
+        stimulus: stim.data?.stimulus || `unknown_${idx}`,
+        ...likertResponses[idx]?.response
+      };
+    });
 
-    // 印象評価部分だけ responses に追加（stimulus つき）
-  for (let i = 0; i < stimulusTrials.length - 1; i++) {
-    const stimulusFile = stimulusTrials[i].data?.stimulus || `unknown_${i}`; // ← 修正済み
-    responses.push({
-      stimulus: stimulusFile,
-      ...likertAll[i]?.response
-  });
-}
-
-    // 🔥 ここがポイント！ backgroundをまるっと展開して追加
+    // 送信形式に整形
     const dataToSend = {
       id: participantID,
-      ...background,         // ← これで年齢・性別・子育て・ペット・AQ全部入る
-      responses: responses   // ← 刺激ごとの印象評価リスト
+      ...background,
+      responses
     };
 
-    console.log("送信データ:", dataToSend);
-
-    // ✅ Netlifyにデータ送信（非表示）
+    // Netlifyに送信
     fetch("/", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -307,10 +307,10 @@ jsPsych.init({
       })
     })
     .then(() => {
-      console.log("Netlifyに送信完了！");
+      console.log("✅ データ送信完了！");
     })
     .catch((error) => {
-      console.error("送信失敗:", error);
+      console.error("❌ データ送信失敗:", error);
     });
   }
 });
