@@ -132,12 +132,13 @@ const shuffledStimuli = jsPsych.randomization.shuffle(stimuliFiles);
 
 // ==== 刺激提示 & 評価 ====
 shuffledStimuli.forEach(file => {
-  timeline.push({
-    type: 'html-button-response',
-    stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
-    choices: ['次へ'],
-    prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
-  });
+timeline.push({
+  type: 'html-button-response',
+  stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
+  data: { stimulus: file }, // ← これを追加！
+  choices: ['次へ'],
+  prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
+});
 
 const fixedQuestions = [
   {
@@ -278,16 +279,13 @@ jsPsych.init({
     const responses = [];
 
     // 印象評価部分だけ responses に追加（stimulus つき）
-    for (let i = 0; i < stimulusTrials.length - 1; i++) {
-      const stim_html = stimulusTrials[i].stimulus;
-      const fileMatch = stim_html.match(/src="([^"]+)"/);
-      const stimulusFile = fileMatch ? fileMatch[1] : `unknown_${i}`;
-
-      responses.push({
-        stimulus: stimulusFile,
-        ...likertAll[i]?.response  // ← 名前付き質問が自動展開される
-      });
-    }
+  for (let i = 0; i < stimulusTrials.length - 1; i++) {
+    const stimulusFile = stimulusTrials[i].data?.stimulus || `unknown_${i}`; // ← 修正済み
+    responses.push({
+      stimulus: stimulusFile,
+      ...likertAll[i]?.response
+  });
+}
 
     // 🔥 ここがポイント！ backgroundをまるっと展開して追加
     const dataToSend = {
