@@ -98,6 +98,7 @@ timeline.push({
 timeline.push({
   type: 'html-button-response',
   stimulus: '<iframe src="stimuli/perfect_straight_speed2.5.html" width="820" height="620" frameborder="0"></iframe>',
+  data: { stimulus: 'stimuli/perfect_straight_speed2.5.html' },  // ←これを追加！
   choices: ['次へ'],
   prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
 });
