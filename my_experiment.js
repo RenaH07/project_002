@@ -98,7 +98,7 @@ timeline.push({
 timeline.push({
   type: 'html-button-response',
   stimulus: '<iframe src="stimuli/perfect_straight_speed2.5.html" width="820" height="620" frameborder="0"></iframe>',
-  data: { stimulus: 'stimuli/perfect_straight_speed2.5.html' },  // ←これを追加！
+  data: { stimulus_filename: 'stimuli/perfect_straight_speed2.5.html' },  // ←これを追加！
   choices: ['次へ'],
   prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
 });
@@ -136,7 +136,7 @@ shuffledStimuli.forEach(file => {
 timeline.push({
   type: 'html-button-response',
   stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
-  data: { stimulus: file }, // ← これを追加！
+  data: { stimulus_filename: file }, // ← これを追加！
   choices: ['次へ'],
   prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
 });
@@ -269,7 +269,7 @@ jsPsych.init({
 
     // 刺激提示のhtml-button-response（stimulusが含まれるもの）のみ取得
     const stimulusTrials = jsPsych.data.get()
-      .filter(trial => trial.trial_type === 'html-button-response' && trial.data?.stimulus?.includes('stimuli/'))
+      .filter(trial => trial.trial_type === 'html-button-response' && trial.data?.stimulus_filename?.includes('stimuli/'))
       .values();
 
     // 評価に関するsurvey-likertのうち、刺激の数と一致する最後のn件のみ取得
