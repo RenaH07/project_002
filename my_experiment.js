@@ -130,41 +130,7 @@ const stimuliFiles = [
 ];
 const shuffledStimuli = jsPsych.randomization.shuffle(stimuliFiles);
 
-// ==== 刺激提示 & 評価 ====
-shuffledStimuli.forEach(file => {
-shuffledStimuli.forEach(file => {
-  timeline.push({
-    type: 'html-button-response',
-    stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
-    data: { stimulus_filename: file },  // ✅ これで刺激を記録
-    choices: ['次へ'],
-    prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
-  });
-
-  timeline.push({
-    type: 'survey-likert',
-    preamble: "<h3>今見たアニメーションについてあなたの印象を教えてください。</h3>",
-    questions: allQuestions,
-    data: { stimulus_filename: file },  // ✅ ここを追加して評価にも刺激名を保存！
-    on_load: () => {
-      document.querySelectorAll('.jspsych-survey-likert-horizontal .jspsych-survey-likert-label').forEach(label => {
-        label.style.whiteSpace = 'nowrap';
-        label.style.fontSize = '13px';
-        label.style.maxWidth = '100px';
-        label.style.overflow = 'hidden';
-        label.style.textOverflow = 'ellipsis';
-        label.style.display = 'inline-block';
-        label.style.verticalAlign = 'top';
-        label.style.textAlign = 'center';
-      });
-
-      document.querySelectorAll('.jspsych-survey-likert-horizontal td').forEach(cell => {
-        cell.style.width = '100px';
-      });
-    }
-  });
-});
-
+// ==== 評価項目を定義（forEachの前に！） ====
 const fixedQuestions = [
   {
     name: "pleasantness",
@@ -201,13 +167,23 @@ const shuffleQuestions = jsPsych.randomization.shuffle([
   { name: "boring", prompt: "この動きは退屈だと思った", labels: ["全く思わない", "", "", "", "", "", "とてもそう思う"], required: true }
 ]);
 
-  const allQuestions = fixedQuestions.concat(shuffleQuestions);
+const allQuestions = fixedQuestions.concat(shuffleQuestions);
+
+// ==== 刺激提示 & 評価 ====
+shuffledStimuli.forEach(file => {
+  timeline.push({
+    type: 'html-button-response',
+    stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
+    data: { stimulus_filename: file },
+    choices: ['次へ'],
+    prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
+  });
 
   timeline.push({
     type: 'survey-likert',
     preamble: "<h3>今見たアニメーションについてあなたの印象を教えてください。</h3>",
     questions: allQuestions,
-    data: { stimulus_filename: file }, // ← ここを追加！！！！
+    data: { stimulus_filename: file },
     on_load: () => {
       document.querySelectorAll('.jspsych-survey-likert-horizontal .jspsych-survey-likert-label').forEach(label => {
         label.style.whiteSpace = 'nowrap';
