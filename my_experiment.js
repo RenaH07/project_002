@@ -98,6 +98,7 @@ timeline.push({
 timeline.push({
   type: 'html-button-response',
   stimulus: '<iframe src="stimuli/perfect_straight_speed2.5.html" width="820" height="620" frameborder="0"></iframe>',
+  data: { stimulus_filename: 'stimuli/perfect_straight_speed2.5.html' },  // ←これを追加！
   choices: ['次へ'],
   prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
 });
@@ -130,7 +131,16 @@ const stimuliFiles = [
 ];
 const shuffledStimuli = jsPsych.randomization.shuffle(stimuliFiles);
 
-// ==== 評価項目を定義（forEachの前に！） ====
+// ==== 刺激提示 & 評価 ====
+shuffledStimuli.forEach(file => {
+timeline.push({
+  type: 'html-button-response',
+  stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
+  data: { stimulus_filename: file }, // ← これを追加！
+  choices: ['次へ'],
+  prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
+});
+
 const fixedQuestions = [
   {
     name: "pleasantness",
@@ -167,23 +177,12 @@ const shuffleQuestions = jsPsych.randomization.shuffle([
   { name: "boring", prompt: "この動きは退屈だと思った", labels: ["全く思わない", "", "", "", "", "", "とてもそう思う"], required: true }
 ]);
 
-const allQuestions = fixedQuestions.concat(shuffleQuestions);
-
-// ==== 刺激提示 & 評価 ====
-shuffledStimuli.forEach(file => {
-  timeline.push({
-    type: 'html-button-response',
-    stimulus: `<iframe src="${file}" width="800" height="600" frameborder="0"></iframe>`,
-    data: { stimulus_filename: file },
-    choices: ['次へ'],
-    prompt: "<p>アニメーションを見終わったら「次へ」を押してください。</p>"
-  });
+  const allQuestions = fixedQuestions.concat(shuffleQuestions);
 
   timeline.push({
     type: 'survey-likert',
     preamble: "<h3>今見たアニメーションについてあなたの印象を教えてください。</h3>",
     questions: allQuestions,
-    data: { stimulus_filename: file },
     on_load: () => {
       document.querySelectorAll('.jspsych-survey-likert-horizontal .jspsych-survey-likert-label').forEach(label => {
         label.style.whiteSpace = 'nowrap';
@@ -268,37 +267,37 @@ jsPsych.init({
   on_finish: function () {
     const participantID = generateParticipantID();
 
+    // 刺激提示のhtml-button-response（stimulusが含まれるもの）のみ取得
     const stimulusTrials = jsPsych.data.get()
-      .filter(trial => trial.trial_type === 'html-button-response' && trial.stimulus.includes("iframe"))
+      .filter(trial => trial.trial_type === 'html-button-response' && trial.data?.stimulus_filename?.includes('stimuli/'))
       .values();
 
+    // 評価に関するsurvey-likertのうち、刺激の数と一致する最後のn件のみ取得
     const likertResponses = jsPsych.data.get()
       .filter(trial => trial.trial_type === 'survey-likert')
-      .values();
+      .values()
+      .slice(-stimulusTrials.length);  // 練習やAQなどを除外
 
+    // 背景情報
     const backgroundData = jsPsych.data.get().filter({ trial_type: 'survey-html-form' }).values();
     const background = backgroundData.length > 0 ? backgroundData[0].response : {};
 
-const validStimulusTrials = stimulusTrials.filter(trial => trial.stimulus.includes("iframe"));
+    // 各刺激への評価をマージ
+    const responses = stimulusTrials.map((stim, idx) => {
+      return {
+        stimulus: stim.data?.stimulus_filename?.split('/').pop() || `unknown_${idx}`,
+        ...likertResponses[idx]?.response
+      };
+    });
 
-const responses = validStimulusTrials.map((stim, i) => {
-  const fileMatch = stim.stimulus.match(/src="([^"]+)"/);
-  const stimulusFile = fileMatch ? fileMatch[1].split('/').pop() : `unknown_${i}`;
-
-  return {
-    stimulus: stimulusFile,
-    ...likertResponses[i]?.response
-  };
-});
-
+    // 送信形式に整形
     const dataToSend = {
       id: participantID,
       ...background,
-      responses: responses
+      responses
     };
 
-    console.log("送信データ：", dataToSend);
-
+    // Netlifyに送信
     fetch("/", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -308,10 +307,10 @@ const responses = validStimulusTrials.map((stim, i) => {
       })
     })
     .then(() => {
-      console.log("Netlifyへ送信完了！");
+      console.log("✅ データ送信完了！");
     })
     .catch((error) => {
-      console.error("送信失敗：", error);
+      console.error("❌ データ送信失敗:", error);
     });
-  } // ← on_finish の function を閉じる
-});  // ← jsPsych.init を閉じる
+  }
+});
