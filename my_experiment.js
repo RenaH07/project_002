@@ -237,16 +237,16 @@ timeline.push({
   type: 'survey-likert',
   preamble: "<h3>以下の質問にお答えください</h3>",
   questions: [
-    { prompt: "私は、物事を一人で行うよりもほかの人と一緒に行うのを好む", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "自分では丁寧に話しているつもりでも、ほかの人から失礼だと言われることがよくある", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私には興味の偏りがあり、それを追及できないと混乱してしまう", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "物語を読んでいる時、登場人物の意図を理解するのが難しい", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私は、博物館よりは劇場に行きたい", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私は、冗談が理解できないことがよくある", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私は、相手の表情から、感じていることや考えていることが容易にわかる", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私は、特定のカテゴリー（例：自動車、鳥、電車、植物の種類など）について情報を集めることが好きだ", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私は、他者の立場を想像するのが苦手だ", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
-    { prompt: "私には、他人の意図を理解しがたい", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true }
+    { name: "aq_q1", prompt: "私は、物事を一人で行うよりもほかの人と一緒に行うのを好む", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q2", prompt: "自分では丁寧に話しているつもりでも、ほかの人から失礼だと言われることがよくある", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q3", prompt: "私には興味の偏りがあり、それを追及できないと混乱してしまう", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q4", prompt: "物語を読んでいる時、登場人物の意図を理解するのが難しい", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q5", prompt: "私は、博物館よりは劇場に行きたい", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q6", prompt: "私は、冗談が理解できないことがよくある", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q7", prompt: "私は、相手の表情から、感じていることや考えていることが容易にわかる", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q8", prompt: "私は、特定のカテゴリー（例：自動車、鳥、電車、植物の種類など）について情報を集めることが好きだ", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q9", prompt: "私は、他者の立場を想像するのが苦手だ", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true },
+    { name: "aq_q10", prompt: "私には、他人の意図を理解しがたい", labels: ["確かに違う", "だいたい違う", "だいたいそうだ", "確かにそうだ"], required: true }
   ]
 });
 
@@ -264,37 +264,41 @@ jsPsych.init({
   timeline: timeline,
   on_finish: function () {
     const participantID = generateParticipantID();
+
+    // 全survey-likertの回答（印象評価＋AQ）
     const likertAll = jsPsych.data.get().filter({ trial_type: 'survey-likert' }).values();
+
+    // 刺激の提示ブロック（アニメーション）
     const stimulusTrials = jsPsych.data.get().filter({ trial_type: 'html-button-response' }).values();
 
-    // ✅ background 質問がない場合の安全処理
+    // 背景質問（年齢・性別など）を取得
     const backgroundData = jsPsych.data.get().filter({ trial_type: 'survey-html-form' }).values();
     const background = backgroundData.length > 0 ? backgroundData[0].response : {};
 
     const responses = [];
 
-for (let i = 0; i < stimulusTrials.length - 1; i++) {
-  const stim_html = stimulusTrials[i].stimulus;
-  const fileMatch = stim_html.match(/src="([^"]+)"/);
-  const stimulusFile = fileMatch ? fileMatch[1] : `unknown_${i}`;
+    // 印象評価部分だけ responses に追加（stimulus つき）
+    for (let i = 0; i < stimulusTrials.length - 1; i++) {
+      const stim_html = stimulusTrials[i].stimulus;
+      const fileMatch = stim_html.match(/src="([^"]+)"/);
+      const stimulusFile = fileMatch ? fileMatch[1] : `unknown_${i}`;
 
-  responses.push({
-    stimulus: stimulusFile,
-    ...likertAll[i]?.response  // ← 名前付き項目が全部入る！
-  });  // ←←← ココにカンマじゃなくて「カッコ + セミコロン」
-}
+      responses.push({
+        stimulus: stimulusFile,
+        ...likertAll[i]?.response  // ← 名前付き質問が自動展開される
+      });
+    }
 
+    // 🔥 ここがポイント！ backgroundをまるっと展開して追加
     const dataToSend = {
       id: participantID,
-      age: background.age || null,
-      gender: background.gender || null,
-      has_children: background.has_children || null,
-      responses: responses
+      ...background,         // ← これで年齢・性別・子育て・ペット・AQ全部入る
+      responses: responses   // ← 刺激ごとの印象評価リスト
     };
 
     console.log("送信データ:", dataToSend);
 
-    // ✅ Netlifyフォームへ送信（fetchを使った非表示送信）
+    // ✅ Netlifyにデータ送信（非表示）
     fetch("/", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
