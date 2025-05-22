@@ -285,7 +285,7 @@ jsPsych.init({
     // 各刺激への評価をマージ
     const responses = stimulusTrials.map((stim, idx) => {
       return {
-        stimulus: stim.data?.stimulus || `unknown_${idx}`,
+        stimulus: stim.data?.stimulus_filename || `unknown_${idx}`,
         ...likertResponses[idx]?.response
       };
     });
